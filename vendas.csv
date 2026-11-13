@@ -1,15 +1,52 @@
-import streamlit as st
+import os
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 
 # =====================================
 # CONFIGURAÇÃO DA PÁGINA
 # =====================================
 st.set_page_config(
-    page_title="BI Analytics Dashboard",
-    page_icon="📊",
-    layout="wide"
+    page_title="BI Analytics Dashboard", page_icon="📊", layout="wide"
 )
 
-# (Mantenha o restante do código igual, apenas certifique-se de que
-# o arquivo 'dados/vendas.csv' exista no repositório ou faça upload dele)
+st.title("📊 BI Analytics Dashboard")
+
+
+# =====================================
+# CARREGAMENTO DE DADOS COM TRATAMENTO DE ERRO
+# =====================================
+@st.cache_data
+def carregar_dados():
+  caminho_arquivo = os.path.join(
+      os.path.dirname(__file__), "dados", "vendas.csv"
+  )
+
+  if os.path.exists(caminho_arquivo):
+    return pd.read_csv(caminho_arquivo)
+  else:
+    # Cria um DataFrame de exemplo caso o arquivo não exista no repositório
+    st.warning(
+        "⚠️ Arquivo 'dados/vendas.csv' não encontrado. Exibindo dados de"
+        " demonstração."
+    )
+    dados_exemplo = {
+        "Data": ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04"],
+        "Produto": ["Produto A", "Produto B", "Produto A", "Produto C"],
+        "Categoria": [
+            "Eletrônicos",
+            "Móveis",
+            "Eletrônicos",
+            "Utensílios",
+        ],
+        "Vendas": [1500, 3200, 800, 1200],
+        "Quantidade": [10, 5, 8, 12],
+    }
+    return pd.DataFrame(dados_exemplo)
+
+
+df = carregar_dados()
+
+# Exibindo os dados na tela
+st.subheader("Visão Geral dos Dados")
+st.dataframe(df, use_container_width=True)
