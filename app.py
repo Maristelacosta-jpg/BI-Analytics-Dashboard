@@ -1,212 +1,246 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
-# =====================================
-# CONFIGURAÇÃO DA PÁGINA
-# =====================================
+# -------------------------
+# Configuração da página
+# -------------------------
 st.set_page_config(
-    page_title="BI Analytics Dashboard",
+    page_title="Dashboard de Vendas",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
 )
 
-# =====================================
-# FUNÇÕES AUXILIARES
-# =====================================
-def formatar_brl(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+# -------------------------
+# Carregamento dos dados
+# -------------------------
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "data" / "vendas.csv"
 
 @st.cache_data
 def carregar_dados():
     try:
-        df = pd.read_csv("dados/vendas.csv", parse_dates=["Data"])
-        return df
+        df = pd.read_csv(DATA_PATH)
     except FileNotFoundError:
-        st.error("Arquivo 'dados/vendas.csv' não encontrado. Verifique o caminho.")
+        st.error("Arquivo de dados não encontrado em: data/vendas.csv")
         st.stop()
+
+    # Ajustar colunas
+    df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
+    df["Quantidade"] = pd.to_numeric(df["Quantidade"], errors="coerce")
+    df["ValorUnitario"] = pd.to_numeric(df["ValorUnitario"], errors="coerce")
+    df["CustoUnitario"] = pd.to_numeric(df["CustoUnitario"], errors="coerce")
+
+    # Cálculos principais
+    df["Receita"] = df["Quantidade"] * df["ValorUnitario"]
+    df["CustoTotal"] = df["Quantidade"] * df["CustoUnitario"]
+    df["Lucro"] = df["Receita"] - df["CustoTotal"]
+    df["Margem"] = df["Lucro"] / df["Receita"]
+    df["Mes"] = df["Data"].dt.to_period("M").astype(str)
+
+    return df
 
 df = carregar_dados()
 
-# =====================================
-# TÍTULO
-# =====================================
-st.title("📊 BI Analytics Dashboard")
-st.subheader("Painel Executivo de Vendas")
+# -------------------------
+# Filtros
+# -------------------------
+st.sidebar.title("Filtros")
 
-# =====================================
-# FILTROS (BARRA LATERAL)
-# =====================================
-st.sidebar.header("🔎 Filtros")
+# Data
+min_date = df["Data"].min().date()
+max_date = df["Data"].max().date()
 
-# Filtro de Data
-data_min = df["Data"].min().date()
-data_max = df["Data"].max().date()
+start_date = st.sidebar.date_input("Data inicial", value=min_date, min_value=min_date, max_value=max_date)
+end_date = st.sidebar.date_input("Data final", value=max_date, min_value=min_date, max_value=max_date)
 
-intervalo_datas = st.sidebar.date_input(
-    "Período",
-    value=(data_min, data_max),
-    min_value=data_min,
-    max_value=data_max
-)
+# Regiões
+regioes = ["Todos"] + sorted(df["Regiao"].dropna().unique().tolist())
+regiao = st.sidebar.selectbox("Região", regioes)
 
-regioes = st.sidebar.multiselect(
-    "Região",
-    options=sorted(df["Regiao"].unique()),
-    default=sorted(df["Regiao"].unique())
-)
+categorias = ["Todos"] + sorted(df["Categoria"].dropna().unique().tolist())
+categoria = st.sidebar.selectbox("Categoria", categorias)
 
-categorias = st.sidebar.multiselect(
-    "Categoria",
-    options=sorted(df["Categoria"].unique()),
-    default=sorted(df["Categoria"].unique())
-)
+canais = ["Todos"] + sorted(df["CanalVenda"].dropna().unique().tolist())
+canal = st.sidebar.selectbox("Canal de venda", canais)
 
-# Filtra produtos disponíveis com base nas categorias selecionadas
-produtos_disponiveis = sorted(df[df["Categoria"].isin(categorias)]["Produto"].unique())
-produtos = st.sidebar.multiselect(
-    "Produto",
-    options=produtos_disponiveis,
-    default=produtos_disponiveis
-)
+lojas = ["Todos"] + sorted(df["Loja"].dropna().unique().tolist())
+loja = st.sidebar.selectbox("Loja", lojas)
 
-# =====================================
-# DADOS FILTRADOS
-# =====================================
-# Garante que o usuário selecionou data inicial e final
-if len(intervalo_datas) == 2:
-    data_inicio, data_fim = intervalo_datas
-    filtro_data = (df["Data"].dt.date >= data_inicio) & (df["Data"].dt.date <= data_fim)
-else:
-    filtro_data = True
+# Aplicar filtros
+df_filtrado = df.copy()
+df_filtrado = df_filtrado[(df_filtrado["Data"] >= pd.Timestamp(start_date)) & (df_filtrado["Data"] <= pd.Timestamp(end_date))]
 
-df_filtrado = df[
-    filtro_data
-    & (df["Regiao"].isin(regioes))
-    & (df["Categoria"].isin(categorias))
-    & (df["Produto"].isin(produtos))
-]
+if regiao != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["Regiao"] == regiao]
 
-if df_filtrado.empty:
-    st.warning("⚠️ Nenhum dado encontrado para os filtros selecionados. Ajuste as opções na barra lateral.")
-    st.stop()
+if categoria != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["Categoria"] == categoria]
 
-# =====================================
+if canal != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["CanalVenda"] == canal]
+
+if loja != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["Loja"] == loja]
+
+# -------------------------
 # KPIs
-# =====================================
-faturamento = df_filtrado["Valor"].sum()
-quantidade = df_filtrado["Quantidade"].sum()
-ticket_medio = faturamento / quantidade if quantidade > 0 else 0
-produto_lider = df_filtrado.groupby("Produto")["Valor"].sum().idxmax()
+# -------------------------
+receita_total = df_filtrado["Receita"].sum()
+custo_total = df_filtrado["CustoTotal"].sum()
+lucro_total = df_filtrado["Lucro"].sum()
+quantidade_total = df_filtrado["Quantidade"].sum()
+ticket_medio = receita_total / quantidade_total if quantidade_total > 0 else 0
+margem_media = lucro_total / receita_total if receita_total > 0 else 0
 
+# ------------ Título
+st.title("📊 Dashboard de Vendas")
+st.caption("Análise de desempenho por período, loja, categoria, região e canal de venda.")
+
+# ------------ KPIs
 col1, col2, col3, col4 = st.columns(4)
+col1.metric("Receita total", f"R$ {receita_total:,.2f}")
+col2.metric("Lucro total", f"R$ {lucro_total:,.2f}")
+col3.metric("Quantidade vendida", f"{quantidade_total:,.0f}")
+col4.metric("Ticket médio", f"R$ {ticket_medio:,.2f}")
 
-col1.metric("💰 Faturamento", formatar_brl(faturamento))
-col2.metric("📦 Quantidade", f"{quantidade:,}".replace(",", "."))
-col3.metric("🧾 Ticket Médio", formatar_brl(ticket_medio))
-col4.metric("🏆 Produto Líder", produto_lider)
-
-st.divider()
-
-# =====================================
-# GRÁFICOS
-# =====================================
-col_esq, col_dir = st.columns(2)
-
-with col_esq:
-    st.subheader("📈 Vendas por Produto")
-    vendas_produto = (
-        df_filtrado.groupby("Produto")["Valor"]
-        .sum()
-        .reset_index()
-        .sort_values(by="Valor", ascending=False)
-    )
-    fig_produto = px.bar(
-        vendas_produto,
-        x="Produto",
-        y="Valor",
-        color="Produto",
-        text_auto=".2s"
-    )
-    fig_produto.update_layout(showlegend=False)
-    st.plotly_chart(fig_produto, width="stretch")
-
-with col_dir:
-    st.subheader("🌎 Participação por Região")
-    vendas_regiao = (
-        df_filtrado.groupby("Regiao")["Valor"]
-        .sum()
-        .reset_index()
-    )
-    fig_regiao = px.pie(
-        vendas_regiao,
-        names="Regiao",
-        values="Valor",
-        hole=0.4
-    )
-    st.plotly_chart(fig_regiao, width="stretch")
-
-# =====================================
-# CATEGORIAS
-# =====================================
-st.subheader("📊 Faturamento por Categoria")
-categoria_df = (
-    df_filtrado.groupby("Categoria")["Valor"]
-    .sum()
-    .reset_index()
-    .sort_values(by="Valor", ascending=False)
+# -------------------------
+# Gráficos principais
+# -------------------------
+# Receita por mês
+vendas_mes = (
+    df_filtrado.groupby("Mes", as_index=False)
+    .agg(Receita=("Receita", "sum"), Lucro=("Lucro", "sum"))
+    .sort_values("Mes")
 )
+
+fig_linha = px.line(
+    vendas_mes,
+    x="Mes",
+    y="Receita",
+    markers=True,
+    title="Receita por mês",
+    color_discrete_sequence=["#1f77b4"],
+)
+
+fig_linha.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    title_x=0.5
+)
+
+# Receita por categoria
+vendas_categoria = (
+    df_filtrado.groupby("Categoria", as_index=False)
+    .agg(Receita=("Receita", "sum"))
+    .sort_values("Receita", ascending=False)
+)
+
 fig_categoria = px.bar(
-    categoria_df,
+    vendas_categoria,
     x="Categoria",
-    y="Valor",
+    y="Receita",
+    title="Receita por categoria",
     color="Categoria",
-    text_auto=".2s"
-)
-fig_categoria.update_layout(showlegend=False)
-st.plotly_chart(fig_categoria, width="stretch")
-
-# =====================================
-# EVOLUÇÃO TEMPORAL
-# =====================================
-st.subheader("📅 Evolução das Vendas")
-vendas_tempo = (
-    df_filtrado.groupby("Data")["Valor"]
-    .sum()
-    .reset_index()
-    .sort_values("Data")
-)
-fig_tempo = px.line(
-    vendas_tempo,
-    x="Data",
-    y="Valor",
-    markers=True
-)
-st.plotly_chart(fig_tempo, width="stretch")
-
-# =====================================
-# TABELA E DOWNLOAD
-# =====================================
-st.subheader("📋 Dados Detalhados")
-st.dataframe(
-    df_filtrado.sort_values("Data", ascending=False),
-    width="stretch",
-    hide_index=True
+    color_discrete_sequence=px.colors.qualitative.Set2,
 )
 
-csv = df_filtrado.to_csv(index=False).encode("utf-8-sig")
-
-st.download_button(
-    "⬇️ Baixar Relatório CSV",
-    data=csv,
-    file_name="relatorio_vendas.csv",
-    mime="text/csv"
+# Receita por loja
+vendas_loja = (
+    df_filtrado.groupby("Loja", as_index=False)
+    .agg(Receita=("Receita", "sum"))
+    .sort_values("Receita", ascending=False)
 )
 
-# =====================================
-# RODAPÉ
-# =====================================
-st.markdown("---")
-st.caption(
-    "Desenvolvido por Maristela Costa • BI Analytics Dashboard • Python • Streamlit • Pandas • Plotly"
+fig_loja = px.bar(
+    vendas_loja,
+    x="Loja",
+    y="Receita",
+    title="Receita por loja",
+    color="Loja",
+    color_discrete_sequence=px.colors.qualitative.Pastel,
+)
+
+# Receita por região
+vendas_regiao = (
+    df_filtrado.groupby("Regiao", as_index=False)
+    .agg(Receita=("Receita", "sum"))
+    .sort_values("Receita", ascending=False)
+)
+
+fig_regiao = px.pie(
+    vendas_regiao,
+    names="Regiao",
+    values="Receita",
+    title="Participação por região",
+    hole=0.4
+)
+
+# Top 10 produtos
+top_produtos = (
+    df_filtrado.groupby("Produto", as_index=False)
+    .agg(Receita=("Receita", "sum"))
+    .sort_values("Receita", ascending=False)
+    .head(10)
+)
+
+fig_produtos = px.bar(
+    top_produtos,
+    x="Produto",
+    y="Receita",
+    title="Top 10 produtos por receita",
+    color="Receita",
+    color_continuous_scale="Blues",
+)
+
+# -------------------------
+# Layout com gráficos
+# -------------------------
+st.plotly_chart(fig_linha, use_container_width=True)
+
+col5, col6 = st.columns(2)
+with col5:
+    st.plotly_chart(fig_categoria, use_container_width=True)
+with col6:
+    st.plotly_chart(fig_regiao, use_container_width=True)
+
+col7, col8 = st.columns(2)
+with col7:
+    st.plotly_chart(fig_loja, use_container_width=True)
+with col8:
+    st.plotly_chart(fig_produtos, use_container_width=True)
+
+# -------------------------
+# Tabela detalhada
+# -------------------------
+st.subheader("Dados detalhados")
+
+tabela = df_filtrado[[
+    "Data",
+    "Loja",
+    "Regiao",
+    "Produto",
+    "Categoria",
+    "Quantidade",
+    "ValorUnitario",
+    "Receita",
+    "CustoTotal",
+    "Lucro",
+    "CanalVenda"
+]].sort_values("Data", ascending=False)
+
+st.dataframe(tabela, use_container_width=True)
+
+# -------------------------
+# Resumo textual
+# -------------------------
+st.subheader("Resumo executivo")
+
+st.write(
+    f"Neste período, a empresa gerou receita total de "
+    f"R$ {receita_total:,.2f}, com lucro de "
+    f"R$ {lucro_total:,.2f} e margem de "
+    f"{margem_media * 100:.2f}%. "
+    f"A categoria e a região com maior participação foram analisadas nos gráficos acima."
 )
