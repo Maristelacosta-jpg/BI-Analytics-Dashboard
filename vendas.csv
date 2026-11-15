@@ -1,52 +1,16 @@
-import os
-import pandas as pd
-import plotly.express as px
-import streamlit as st
-
-# =====================================
-# CONFIGURAÇÃO DA PÁGINA
-# =====================================
-st.set_page_config(
-    page_title="BI Analytics Dashboard", page_icon="📊", layout="wide"
-)
-
-st.title("📊 BI Analytics Dashboard")
-
-
-# =====================================
-# CARREGAMENTO DE DADOS COM TRATAMENTO DE ERRO
-# =====================================
-@st.cache_data
-def carregar_dados():
-  caminho_arquivo = os.path.join(
-      os.path.dirname(__file__), "dados", "vendas.csv"
-  )
-
-  if os.path.exists(caminho_arquivo):
-    return pd.read_csv(caminho_arquivo)
-  else:
-    # Cria um DataFrame de exemplo caso o arquivo não exista no repositório
-    st.warning(
-        "⚠️ Arquivo 'dados/vendas.csv' não encontrado. Exibindo dados de"
-        " demonstração."
-    )
-    dados_exemplo = {
-        "Data": ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04"],
-        "Produto": ["Produto A", "Produto B", "Produto A", "Produto C"],
-        "Categoria": [
-            "Eletrônicos",
-            "Móveis",
-            "Eletrônicos",
-            "Utensílios",
-        ],
-        "Vendas": [1500, 3200, 800, 1200],
-        "Quantidade": [10, 5, 8, 12],
-    }
-    return pd.DataFrame(dados_exemplo)
-
-
-df = carregar_dados()
-
-# Exibindo os dados na tela
-st.subheader("Visão Geral dos Dados")
-st.dataframe(df, use_container_width=True)
+Data,Loja,Regiao,Produto,Categoria,Quantidade,ValorUnitario,CustoUnitario,CanalVenda
+2024-01-10,Loja Centro,Sudeste,Notebook,Eletrônicos,5,2800,2100,Loja
+2024-01-15,Loja Norte,Nordeste,Smartphone,Eletrônicos,12,1500,1100,Online
+2024-01-20,Loja Sul,Sul,Monitor,Eletrônicos,7,900,650,Loja
+2024-02-05,Loja Centro,Sudeste,Impressora,Office,9,450,300,Online
+2024-02-11,Loja Nordeste, Nordeste,Teclado,Office,15,120,80,Loja
+2024-02-18,Loja Norte,Nordeste,Cadeira,Moveis,6,500,320,Loja
+2024-03-02,Loja Sul,Sul,Notebook,Eletrônicos,4,3000,2200,Online
+2024-03-07,Loja Nordeste, Nordeste,Smartphone,Eletrônicos,10,1700,1250,Loja
+2024-03-15,Loja Centro,Sudeste,Mouse,Office,20,60,35,Online
+2024-03-28,Loja Norte,Nordeste,Monitor,Eletrônicos,8,950,700,Loja
+2024-04-04,Loja Sul,Sul,Impressora,Office,5,470,310,Online
+2024-04-12,Loja Centro,Sudeste,Cadeira,Moveis,7,560,400,Loja
+2024-04-25,Loja Nordeste, Nordeste,Monitor,Eletrônicos,6,980,720,Loja
+2024-05-03,Loja Sul,Sul,Teclado,Office,18,130,90,Online
+2024-05-17,Loja Centro,Sudeste,Smartphone,Eletrônicos,11,1600,1180,Loja
