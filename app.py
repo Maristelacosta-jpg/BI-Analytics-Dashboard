@@ -7,7 +7,7 @@ from pathlib import Path
 # Configuração da página
 # -------------------------
 st.set_page_config(
-    page_title="Dashboard de Vendas",
+    page_title="Dashboard BI - Vendas",
     page_icon="📊",
     layout="wide",
 )
@@ -26,18 +26,21 @@ def carregar_dados():
         st.error("Arquivo de dados não encontrado em: data/vendas.csv")
         st.stop()
 
-    # Ajustar colunas
+    # Ajuste de tipos
     df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
     df["Quantidade"] = pd.to_numeric(df["Quantidade"], errors="coerce")
     df["ValorUnitario"] = pd.to_numeric(df["ValorUnitario"], errors="coerce")
     df["CustoUnitario"] = pd.to_numeric(df["CustoUnitario"], errors="coerce")
 
-    # Cálculos principais
+    # Cálculos
     df["Receita"] = df["Quantidade"] * df["ValorUnitario"]
     df["CustoTotal"] = df["Quantidade"] * df["CustoUnitario"]
     df["Lucro"] = df["Receita"] - df["CustoTotal"]
     df["Margem"] = df["Lucro"] / df["Receita"]
     df["Mes"] = df["Data"].dt.to_period("M").astype(str)
+
+    # Removendo dados inválidos
+    df = df.dropna(subset=["Data", "Quantidade", "ValorUnitario", "CustoUnitario"]).copy()
 
     return df
 
@@ -46,16 +49,14 @@ df = carregar_dados()
 # -------------------------
 # Filtros
 # -------------------------
-st.sidebar.title("Filtros")
+st.sidebar.title("🧰 Filtros")
 
-# Data
 min_date = df["Data"].min().date()
 max_date = df["Data"].max().date()
 
-start_date = st.sidebar.date_input("Data inicial", value=min_date, min_value=min_date, max_value=max_date)
-end_date = st.sidebar.date_input("Data final", value=max_date, min_value=min_date, max_value=max_date)
+start_date = st.sidebar.date_input("Data inicial", min_value=min_date, max_value=max_date, value=min_date)
+end_date = st.sidebar.date_input("Data final", min_value=min_date, max_value=max_date, value=max_date)
 
-# Regiões
 regioes = ["Todos"] + sorted(df["Regiao"].dropna().unique().tolist())
 regiao = st.sidebar.selectbox("Região", regioes)
 
@@ -68,9 +69,12 @@ canal = st.sidebar.selectbox("Canal de venda", canais)
 lojas = ["Todos"] + sorted(df["Loja"].dropna().unique().tolist())
 loja = st.sidebar.selectbox("Loja", lojas)
 
-# Aplicar filtros
+# Aplicando filtros
 df_filtrado = df.copy()
-df_filtrado = df_filtrado[(df_filtrado["Data"] >= pd.Timestamp(start_date)) & (df_filtrado["Data"] <= pd.Timestamp(end_date))]
+df_filtrado = df_filtrado[
+    (df_filtrado["Data"] >= pd.Timestamp(start_date)) &
+    (df_filtrado["Data"] <= pd.Timestamp(end_date))
+]
 
 if regiao != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Regiao"] == regiao]
@@ -85,162 +89,165 @@ if loja != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Loja"] == loja]
 
 # -------------------------
-# KPIs
+# KPIs principais
 # -------------------------
 receita_total = df_filtrado["Receita"].sum()
 custo_total = df_filtrado["CustoTotal"].sum()
 lucro_total = df_filtrado["Lucro"].sum()
 quantidade_total = df_filtrado["Quantidade"].sum()
-ticket_medio = receita_total / quantidade_total if quantidade_total > 0 else 0
-margem_media = lucro_total / receita_total if receita_total > 0 else 0
+ticket_medio = receita_total / quantidade_total if quantidade_total else 0
+margem_percentual = (lucro_total / receita_total) * 100 if receita_total else 0
 
-# ------------ Título
+# -------------------------
+# Título
+# -------------------------
 st.title("📊 Dashboard de Vendas")
-st.caption("Análise de desempenho por período, loja, categoria, região e canal de venda.")
+st.caption("Painel executivo de análise de desempenho comercial")
 
-# ------------ KPIs
+# KPI cards
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Receita total", f"R$ {receita_total:,.2f}")
-col2.metric("Lucro total", f"R$ {lucro_total:,.2f}")
-col3.metric("Quantidade vendida", f"{quantidade_total:,.0f}")
-col4.metric("Ticket médio", f"R$ {ticket_medio:,.2f}")
+col1.metric("Receita Total", f"R$ {receita_total:,.2f}")
+col2.metric("Lucro Total", f"R$ {lucro_total:,.2f}")
+col3.metric("Quantidade Vendida", f"{quantidade_total:,.0f}")
+col4.metric("Ticket Médio", f"R$ {ticket_medio:,.2f}")
 
-# -------------------------
-# Gráficos principais
-# -------------------------
-# Receita por mês
-vendas_mes = (
-    df_filtrado.groupby("Mes", as_index=False)
-    .agg(Receita=("Receita", "sum"), Lucro=("Lucro", "sum"))
-    .sort_values("Mes")
-)
+st.markdown("---")
 
-fig_linha = px.line(
-    vendas_mes,
-    x="Mes",
-    y="Receita",
-    markers=True,
-    title="Receita por mês",
-    color_discrete_sequence=["#1f77b4"],
-)
+# Tabs
+tab1, tab2, tab3 = st.tabs(["📈 Visão Geral", "📊 Comparativos", "🧾 Dados"])
 
-fig_linha.update_layout(
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    title_x=0.5
-)
+with tab1:
+    # Receita por mês
+    vendas_mes = (
+        df_filtrado.groupby("Mes", as_index=False)
+        .agg(Receita=("Receita", "sum"), Lucro=("Lucro", "sum"))
+        .sort_values("Mes")
+    )
 
-# Receita por categoria
-vendas_categoria = (
-    df_filtrado.groupby("Categoria", as_index=False)
-    .agg(Receita=("Receita", "sum"))
-    .sort_values("Receita", ascending=False)
-)
+    fig_line = px.line(
+        vendas_mes,
+        x="Mes",
+        y="Receita",
+        markers=True,
+        title="Evolução da Receita por Mês",
+        color_discrete_sequence=["#1f77b4"],
+    )
 
-fig_categoria = px.bar(
-    vendas_categoria,
-    x="Categoria",
-    y="Receita",
-    title="Receita por categoria",
-    color="Categoria",
-    color_discrete_sequence=px.colors.qualitative.Set2,
-)
+    st.plotly_chart(fig_line, use_container_width=True)
 
-# Receita por loja
-vendas_loja = (
-    df_filtrado.groupby("Loja", as_index=False)
-    .agg(Receita=("Receita", "sum"))
-    .sort_values("Receita", ascending=False)
-)
+    colA, colB = st.columns(2)
 
-fig_loja = px.bar(
-    vendas_loja,
-    x="Loja",
-    y="Receita",
-    title="Receita por loja",
-    color="Loja",
-    color_discrete_sequence=px.colors.qualitative.Pastel,
-)
+    with colA:
+        # Receita por categoria
+        vendas_categoria = (
+            df_filtrado.groupby("Categoria", as_index=False)
+            .agg(Receita=("Receita", "sum"))
+            .sort_values("Receita", ascending=False)
+        )
 
-# Receita por região
-vendas_regiao = (
-    df_filtrado.groupby("Regiao", as_index=False)
-    .agg(Receita=("Receita", "sum"))
-    .sort_values("Receita", ascending=False)
-)
+        fig_cat = px.bar(
+            vendas_categoria,
+            x="Categoria",
+            y="Receita",
+            title="Receita por Categoria",
+            color="Categoria",
+            color_discrete_sequence=px.colors.qualitative.Set2,
+        )
+        st.plotly_chart(fig_cat, use_container_width=True)
 
-fig_regiao = px.pie(
-    vendas_regiao,
-    names="Regiao",
-    values="Receita",
-    title="Participação por região",
-    hole=0.4
-)
+    with colB:
+        # Vendas por canal
+        vendas_canal = (
+            df_filtrado.groupby("CanalVenda", as_index=False)
+            .agg(Receita=("Receita", "sum"))
+            .sort_values("Receita", ascending=False)
+        )
 
-# Top 10 produtos
-top_produtos = (
-    df_filtrado.groupby("Produto", as_index=False)
-    .agg(Receita=("Receita", "sum"))
-    .sort_values("Receita", ascending=False)
-    .head(10)
-)
+        fig_canal = px.pie(
+            vendas_canal,
+            names="CanalVenda",
+            values="Receita",
+            title="Receita por Canal de Venda",
+            hole=0.4,
+            color_discrete_sequence=px.colors.qualitative.Set3,
+        )
+        st.plotly_chart(fig_canal, use_container_width=True)
 
-fig_produtos = px.bar(
-    top_produtos,
-    x="Produto",
-    y="Receita",
-    title="Top 10 produtos por receita",
-    color="Receita",
-    color_continuous_scale="Blues",
-)
+with tab2:
+    col1, col2 = st.columns(2)
 
-# -------------------------
-# Layout com gráficos
-# -------------------------
-st.plotly_chart(fig_linha, use_container_width=True)
+    with col1:
+        # Receita por loja
+        vendas_loja = (
+            df_filtrado.groupby("Loja", as_index=False)
+            .agg(Receita=("Receita", "sum"), Lucro=("Lucro", "sum"))
+            .sort_values("Receita", ascending=False)
+        )
 
-col5, col6 = st.columns(2)
-with col5:
-    st.plotly_chart(fig_categoria, use_container_width=True)
-with col6:
-    st.plotly_chart(fig_regiao, use_container_width=True)
+        fig_loja = px.bar(
+            vendas_loja,
+            x="Loja",
+            y="Receita",
+            title="Receita por Loja",
+            color="Lucro",
+            color_continuous_scale="Viridis",
+        )
+        st.plotly_chart(fig_loja, use_container_width=True)
 
-col7, col8 = st.columns(2)
-with col7:
-    st.plotly_chart(fig_loja, use_container_width=True)
-with col8:
-    st.plotly_chart(fig_produtos, use_container_width=True)
+    with col2:
+        # Receita por região
+        vendas_regiao = (
+            df_filtrado.groupby("Regiao", as_index=False)
+            .agg(Receita=("Receita", "sum"))
+            .sort_values("Receita", ascending=False)
+        )
 
-# -------------------------
-# Tabela detalhada
-# -------------------------
-st.subheader("Dados detalhados")
+        fig_regiao = px.bar(
+            vendas_regiao,
+            x="Regiao",
+            y="Receita",
+            title="Receita por Região",
+            color="Regiao",
+            color_discrete_sequence=px.colors.qualitative.Dark2,
+        )
+        st.plotly_chart(fig_regiao, use_container_width=True)
 
-tabela = df_filtrado[[
-    "Data",
-    "Loja",
-    "Regiao",
-    "Produto",
-    "Categoria",
-    "Quantidade",
-    "ValorUnitario",
-    "Receita",
-    "CustoTotal",
-    "Lucro",
-    "CanalVenda"
-]].sort_values("Data", ascending=False)
+    # Top 10 produtos
+    top_produtos = (
+        df_filtrado.groupby("Produto", as_index=False)
+        .agg(Receita=("Receita", "sum"), Quantidade=("Quantidade", "sum"))
+        .sort_values("Receita", ascending=False)
+        .head(10)
+    )
 
-st.dataframe(tabela, use_container_width=True)
+    fig_top = px.bar(
+        top_produtos,
+        x="Produto",
+        y="Receita",
+        title="Top 10 Produtos por Receita",
+        color="Quantidade",
+        color_continuous_scale="Blues",
+    )
+    st.plotly_chart(fig_top, use_container_width=True)
 
-# -------------------------
-# Resumo textual
-# -------------------------
-st.subheader("Resumo executivo")
+with tab3:
+    tabela = df_filtrado[[
+        "Data", "Loja", "Regiao", "Produto", "Categoria",
+        "Quantidade", "ValorUnitario", "Receita", "CustoTotal", "Lucro", "CanalVenda"
+    ]].sort_values("Data", ascending=False)
 
-st.write(
-    f"Neste período, a empresa gerou receita total de "
-    f"R$ {receita_total:,.2f}, com lucro de "
-    f"R$ {lucro_total:,.2f} e margem de "
-    f"{margem_media * 100:.2f}%. "
-    f"A categoria e a região com maior participação foram analisadas nos gráficos acima."
-)
+    st.dataframe(tabela, use_container_width=True)
+
+    # Resumo executivo
+    st.subheader("Resumo Executivo")
+    st.markdown(f"""
+    - Receita total: **R$ {receita_total:,.2f}**
+    - Lucro total: **R$ {lucro_total:,.2f}**
+    - Margem: **{margem_percentual:.2f}%**
+    - Quantidade vendida: **{quantidade_total:,.0f}**
+    - Ticket médio: **R$ {ticket_medio:,.2f}**
+    """)
+
+# Rodapé
+st.markdown("---")
+st.caption("Dashboard em desenvolvimento - dados vindos do arquivo vendas.csv")
