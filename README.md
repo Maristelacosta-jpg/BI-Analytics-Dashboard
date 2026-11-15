@@ -1,164 +1,123 @@
-# 📊 Painel de Análise de BI
+# 📊 Painel de Análise de Vendas
 
-## 📋 Sobre o Projeto
+Dashboard interativo de Business Intelligence para explorar dados de vendas, acompanhar indicadores e apoiar a tomada de decisão baseada em dados.
 
-Dashboard de Business Intelligence desenvolvido para análise de indicadores estratégicos e apoio à tomada de decisão orientada por dados.
-
-Utiliza Python, Pandas e Streamlit para coleta, tratamento e visualização de dados, permitindo monitorar indicadores de desempenho por meio de dashboards, gráficos e análises interativas.
-
----
+O projeto utiliza Python, Pandas e Streamlit para carregar, tratar e apresentar os dados em uma interface visual.
 
 ## 🎯 Objetivos
 
-- Transformar dados em informações estratégicas.
-- Facilitar a tomada de decisão baseada em dados.
-- Monitorar indicadores de desempenho (KPIs).
-- Identificar tendências e oportunidades de melhoria.
-- Disponibilizar informações de forma visual e acessível.
-
----
+- Transformar dados de vendas em informações úteis.
+- Acompanhar indicadores de desempenho (KPIs).
+- Explorar tendências e resultados por meio de visualizações.
+- Facilitar a análise dos dados de forma interativa.
 
 ## ✅ Funcionalidades
 
-- Dashboard interativo.
-- Visualização gráfica de indicadores.
-- Análise de tendências.
-- KPIs em tempo real.
-- Relatórios gerenciais.
-- Filtros dinâmicos para exploração dos dados.
-- Acompanhamento de desempenho.
+- Carregamento e análise de dados de vendas.
+- Visualização de indicadores e gráficos.
+- Exploração dos dados disponíveis no arquivo `vendas.csv`.
 
----
+> As funcionalidades específicas dependem da implementação atual em `app.py`.
 
-## 🏛️ Arquitetura da Solução
+## 🏗️ Arquitetura
 
 ```mermaid
 flowchart LR
-
-A[Base de Dados]
---> B[Python]
-
-B --> C[Pandas]
-
-C --> D[Tratamento dos Dados]
-
-D --> E[Streamlit]
-
-E --> F[Dashboard Interativo]
+    A[Arquivo vendas.csv] --> B[Python]
+    B --> C[Pandas]
+    C --> D[Tratamento dos dados]
+    D --> E[Streamlit]
+    E --> F[Dashboard interativo]
 ```
 
----
-
-## 📈 Indicadores Monitorados
-
-- Total de vendas
-- Receita acumulada
-- Ticket médio
-- Crescimento mensal
-- Desempenho por categoria
-- Evolução temporal
-- Indicadores de performance
-
----
-
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias
 
 - Python
 - Pandas
 - Streamlit
-- SQL
-- Plotly
-- Git
-- GitHub
+- Git e GitHub
 
----
+## 📁 Estrutura do projeto
 
-## 💼 Valor de Negócio
+```text
+.
+├── app.py
+├── requirements.txt
+├── vendas.csv
+└── README.md
+```
 
-Este projeto demonstra a aplicação de conceitos de Business Intelligence e Análise de Dados para transformar informações em conhecimento útil para a tomada de decisões.
+## 🚀 Como executar
 
-Por meio de dashboards interativos, gestores podem acompanhar indicadores estratégicos, identificar tendências e monitorar resultados de forma eficiente.
+1. Clone o repositório:
 
----
+   ```bash
+   git clone https://github.com/Maristelacosta/BI-Analytics-Dashboard.git
+   ```
 
-## 📊 Benefícios
+2. Acesse a pasta do projeto:
 
-- Apoio à tomada de decisão baseada em dados.
-- Visualização rápida dos resultados.
-- Centralização das informações estratégicas.
-- Monitoramento contínuo de indicadores.
-- Identificação de tendências e oportunidades de melhoria.
-- Redução do tempo gasto em análises operacionais.
+   ```bash
+   cd BI-Analytics-Dashboard
+   ```
 
----
+3. (Opcional) Crie e ative um ambiente virtual:
 
-## 🚀 Demonstração
+   ```bash
+   python -m venv .venv
+   ```
 
-A aplicação está disponível online para visualização dos dashboards, indicadores e análises interativas.
+   No Windows:
 
-🔗 Acesse a versão publicada pelo link disponível neste repositório.
+   ```bash
+   .venv\Scripts\activate
+   ```
 
----
+   No macOS ou Linux:
 
-## 📚 Conceitos Aplicados
+   ```bash
+   source .venv/bin/activate
+   ```
 
-- Business Intelligence (BI)
-- Data Analytics
-- Visualização de Dados
-- Indicadores de Desempenho (KPIs)
-- Tomada de Decisão Baseada em Dados
-- Storytelling com Dados
-- Tratamento e Limpeza de Dados
-- Dashboards Interativos
+4. Instale as dependências:
 
----
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## 🏆 Competências Demonstradas
+5. Inicie o dashboard:
+
+   ```bash
+   streamlit run app.py
+   ```
+
+## 📊 Dados
+
+O arquivo `vendas.csv` contém os dados utilizados pela aplicação. Para usar outra base, verifique em `app.py` o caminho do arquivo e os nomes das colunas esperados.
+
+## 💡 Conceitos aplicados
 
 - Business Intelligence
-- Análise de Dados
-- Visualização de Dados
-- Python para Análise de Dados
-- KPIs e Métricas de Negócio
-- Storytelling com Dados
-- Dashboards Interativos
-- Tomada de Decisão Baseada em Dados
+- Análise e visualização de dados
+- Indicadores de desempenho (KPIs)
+- Tratamento de dados com Pandas
+- Dashboards interativos
+- Tomada de decisão orientada por dados
 
----
+## 🛣️ Próximas melhorias
 
-## 🛣️ Roadmap
+- [ ] Aprimorar o dashboard executivo.
+- [ ] Adicionar filtros analíticos.
+- [ ] Permitir a exportação de relatórios.
+- [ ] Automatizar a atualização dos dados.
+- [ ] Publicar a aplicação online.
 
-### Fase 1 - Estruturação
-
-- [x] Levantamento dos indicadores
-- [x] Estruturação dos dados
-- [x] Desenvolvimento inicial do dashboard
-
-### Fase 2 - Análise
-
-- [x] Visualização de KPIs
-- [x] Gráficos interativos
-- [x] Filtros analíticos
-
-### Fase 3 - Evolução
-
-- [ ] Dashboard executivo
-- [ ] Exportação de relatórios
-- [ ] Integração com APIs
-- [ ] Atualização automática dos dados
-
----
-
-## 👩‍💻 Desenvolvido por
+## 👩‍💻 Autora
 
 **Maristela Costa**
 
-🎓 Bacharel em Sistemas de Informação
+Bacharel em Sistemas de Informação  
+MBA em Cibersegurança e Proteção de Dados — em andamento  
+MBA em Business Intelligence, Big Data e Analytics — em andamento  
 
-🔐 MBA em Cibersegurança e Proteção de Dados (em andamento)
-
-📊 MBA em Business Intelligence, Big Data e Analytics (em andamento)
-
-💻 Desenvolvedora e Analista de Sistemas em formação
-
-🌐 GitHub: github.com/Maristelacosta
+GitHub: [@Maristelacosta](https://github.com/Maristelacosta)
