@@ -16,7 +16,7 @@ st.set_page_config(
 # Carregamento dos dados
 # -------------------------
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR / "data" / "vendas.csv"
+DATA_PATH = BASE_DIR / "vendas.csv"
 
 @st.cache_data
 def carregar_dados():
