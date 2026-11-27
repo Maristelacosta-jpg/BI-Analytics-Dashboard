@@ -64,4 +64,39 @@ st.divider()
 # Filtro
 categorias = st.sidebar.multiselect(
     "Categoria",
-    options=dados[col_categoria]
+    options=dados[col_categoria].unique(),
+    default=dados[col_categoria].unique()
+)
+
+dados_filtrados = dados[
+    dados[col_categoria].isin(categorias)
+]
+
+# Gráfico de barras
+fig1 = px.bar(
+    dados_filtrados,
+    x=col_produto,
+    y=col_vendas,
+    color=col_categoria,
+    title="Faturamento por Produto"
+)
+
+st.plotly_chart(fig1, use_container_width=True)
+
+# Gráfico de pizza
+fig2 = px.pie(
+    dados_filtrados,
+    names=col_categoria,
+    values=col_vendas,
+    title="Participação por Categoria"
+)
+
+st.plotly_chart(fig2, use_container_width=True)
+
+# Tabela
+st.subheader("Dados detalhados")
+
+st.dataframe(
+    dados_filtrados,
+    use_container_width=True
+)
