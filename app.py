@@ -11,92 +11,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Carregar arquivo
+# Título
+st.title("📊 BI Analytics Dashboard")
+st.markdown(
+    "Dashboard interativo para análise de vendas e desempenho comercial."
+)
+
+# Caminho do CSV
 arquivo_csv = Path(__file__).resolve().parent / "vendas.csv"
 
-st.title("📊 BI Analytics Dashboard")
-st.markdown("Dashboard interativo para análise de vendas e desempenho comercial.")
-
-if not arquivo_csv.exists():
-    st.error("Arquivo vendas.csv não encontrado.")
-    st.stop()
-
-dados = pd.read_csv(arquivo_csv)
-
-# Exibir nomes das colunas
-st.subheader("Colunas identificadas")
-st.write(dados.columns.tolist())
-
-# Ajuste os nomes caso sejam diferentes no seu CSV
-col_data = dados.columns[0]
-col_loja = dados.columns[1]
-col_regiao = dados.columns[2]
-col_produto = dados.columns[3]
-col_categoria = dados.columns[4]
-col_quantidade = dados.columns[5]
-col_vendas = dados.columns[6]
-col_lucro = dados.columns[7]
-
-# KPIs
-faturamento_total = dados[col_vendas].sum()
-lucro_total = dados[col_lucro].sum()
-quantidade_total = dados[col_quantidade].sum()
-
-col1, col2, col3 = st.columns(3)
-
-col1.metric(
-    "💰 Faturamento Total",
-    f"R$ {faturamento_total:,.0f}"
-)
-
-col2.metric(
-    "📦 Quantidade Vendida",
-    f"{quantidade_total:,.0f}"
-)
-
-col3.metric(
-    "📈 Lucro Total",
-    f"R$ {lucro_total:,.0f}"
-)
-
-st.divider()
-
-# Filtro
-categorias = st.sidebar.multiselect(
-    "Categoria",
-    options=dados[col_categoria].unique(),
-    default=dados[col_categoria].unique()
-)
-
-dados_filtrados = dados[
-    dados[col_categoria].isin(categorias)
-]
-
-# Gráfico de barras
-fig1 = px.bar(
-    dados_filtrados,
-    x=col_produto,
-    y=col_vendas,
-    color=col_categoria,
-    title="Faturamento por Produto"
-)
-
-st.plotly_chart(fig1, use_container_width=True)
-
-# Gráfico de pizza
-fig2 = px.pie(
-    dados_filtrados,
-    names=col_categoria,
-    values=col_vendas,
-    title="Participação por Categoria"
-)
-
-st.plotly_chart(fig2, use_container_width=True)
-
-# Tabela
-st.subheader("Dados detalhados")
-
-st.dataframe(
-    dados_filtrados,
-    use_container_width=True
-)
+if not arquivo_csv.
