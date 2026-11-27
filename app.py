@@ -4,104 +4,85 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# Configuração da página
 st.set_page_config(
     page_title="BI Analytics Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-# Título
 st.title("📊 BI Analytics Dashboard")
-st.markdown(
-    "Dashboard interativo para análise de vendas e desempenho comercial."
-)
+st.markdown("Dashboard interativo para análise de vendas.")
 
-# Caminho do CSV
 arquivo_csv = Path(__file__).resolve().parent / "vendas.csv"
 
-if not arquivo_csv.exists():
-    st.error("Arquivo vendas.csv não encontrado.")
-    st.stop()
+dados = pd.read_csv(arquivo_csv)
 
-# Leitura do CSV sem cabeçalho
-dados = pd.read_csv(
-    arquivo_csv,
-    header=None,
-    names=[
-        "Data",
-        "Loja",
-        "Regiao",
-        "Produto",
-        "Categoria",
-        "Quantidade",
-        "Faturamento",
-        "Lucro",
-        "Canal"
-    ]
-)
-
-# Sidebar
-st.sidebar.header("Filtros")
-
-categoria = st.sidebar.multiselect(
-    "Categoria",
-    options=dados["Categoria"].unique(),
-    default=dados["Categoria"].unique()
-)
-
-dados_filtrados = dados[
-    dados["Categoria"].isin(categoria)
-]
-
-# KPIs
-faturamento_total = dados_filtrados["Faturamento"].sum()
-lucro_total = dados_filtrados["Lucro"].sum()
-quantidade_total = dados_filtrados["Quantidade"].sum()
+# KPI's
+total_vendas = dados["Valor (R$)"].sum()
+total_quantidade = dados["Quantidade"].sum()
+total_produtos = dados["Produto"].nunique()
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric(
-        "💰 Faturamento Total",
-        f"R$ {faturamento_total:,.0f}"
-    )
+    st.metric("💰 Faturamento Total", f"R$ {total_vendas:,.0f}")
 
 with col2:
-    st.metric(
-        "📦 Quantidade Vendida",
-        f"{quantidade_total:,.0f}"
-    )
+    st.metric("📦 Quantidade Vendida", total_quantidade)
 
 with col3:
-    st.metric(
-        "📈 Lucro Total",
-        f"R$ {lucro_total:,.0f}"
-    )
+    st.metric("🛒 Produtos Diferentes", total_produtos)
+
+# Filtro
+st.sidebar.header("Filtros")
+
+regiao = st.sidebar.multiselect(
+    "Região",
+    dados["Região"].unique(),
+    default=dados["Região"].unique()
+)
+
+dados_filtrados = dados[
+    dados["Região"].isin(regiao)
+]
 
 st.divider()
 
-# Gráfico de barras
+# Gráfico 1
 fig1 = px.bar(
     dados_filtrados,
     x="Produto",
-    y="Faturamento",
-    color="Categoria",
-    title="Faturamento por Produto",
-    text_auto=True
+    y="Valor (R$)",
+    color="Produto",
+    title="Faturamento por Produto"
 )
 
 st.plotly_chart(fig1, use_container_width=True)
 
-# Gráfico de pizza
+# Gráfico 2
 fig2 = px.pie(
     dados_filtrados,
-    names="Produto",
-    values="Lucro",
-    title="Participação do Lucro por Produto"
+    names="Região",
+    values="Valor (R$)",
+    title="Participação das Regiões"
 )
 
 st.plotly_chart(fig2, use_container_width=True)
+
+# Gráfico 3
+vendas_regiao = dados_filtrados.groupby(
+    "Região",
+    as_index=False
+)["Valor (R$)"].sum()
+
+fig3 = px.bar(
+    vendas_regiao,
+    x="Região",
+    y="Valor (R$)",
+    title="Faturamento por Região"
+)
+
+st.plotly_chart(fig3, use_container_width=True)
 
 # Tabela
 st.subheader("📋 Dados Detalhados")
